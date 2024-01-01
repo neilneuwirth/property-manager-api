@@ -1,0 +1,73 @@
+version: '3.9'
+
+services:
+  api: &main_app
+    build:
+      context: .
+      dockerfile: ./deploy/Dockerfile
+      target: prod
+    image: property_manager_api:${PROPERTY_MANAGER_API_VERSION:-latest}
+    restart: always
+    env_file:
+      - .env
+    labels:
+      # Enables traefik for this container.
+      - traefik.enable=true
+      - traefik.http.routers.property_manager_api.rule=Host(`${PROPERTY_MANAGER_API_TRAEFIK_HOST:-property_manager_api.localhost}`)
+      - traefik.http.routers.property_manager_api.entrypoints=http
+      - traefik.http.routers.property_manager_api.service=property_manager_api
+      - traefik.http.services.property_manager_api.loadbalancer.server.port=${PROPERTY_MANAGER_API_PORT:-8000}
+    networks:
+      - default
+      - traefik-shared
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PROPERTY_MANAGER_API_HOST: 0.0.0.0
+      PROPERTY_MANAGER_API_DB_HOST: property_manager_api-db
+      PROPERTY_MANAGER_API_DB_PORT: 5432
+      PROPERTY_MANAGER_API_DB_USER: property_manager_api
+      PROPERTY_MANAGER_API_DB_PASS: property_manager_api
+      PROPERTY_MANAGER_API_DB_BASE: property_manager_api
+
+  db:
+    image: postgres:13.8-bullseye
+    hostname: property_manager_api-db
+    environment:
+      POSTGRES_PASSWORD: "property_manager_api"
+      POSTGRES_USER: "property_manager_api"
+      POSTGRES_DB: "property_manager_api"
+    volumes:
+      - property_manager_api-db-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: pg_isready -U property_manager_api
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  migrator:
+    image: property_manager_api:${PROPERTY_MANAGER_API_VERSION:-latest}
+    restart: "no"
+    command: alembic upgrade head
+    environment:
+      PROPERTY_MANAGER_API_DB_HOST: property_manager_api-db
+      PROPERTY_MANAGER_API_DB_PORT: 5432
+      PROPERTY_MANAGER_API_DB_USER: property_manager_api
+      PROPERTY_MANAGER_API_DB_PASS: property_manager_api
+      PROPERTY_MANAGER_API_DB_BASE: property_manager_api
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+
+volumes:
+  property_manager_api-db-data:
+    name: property_manager_api-db-data
+
+networks:
+  # Network for traefik.
+  traefik-shared:
+    name: traefik-shared
