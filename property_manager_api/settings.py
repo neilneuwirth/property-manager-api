@@ -3,7 +3,7 @@ import enum
 from pathlib import Path
 from tempfile import gettempdir
 from typing import List, Optional
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 from yarl import URL
 
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     """
 
     host: str = "127.0.0.1"
-    port: int = 8000
+    port: int = 8080
     # quantity of workers for uvicorn
     workers_count: int = 1
     # Enable uvicorn reloading

@@ -26,7 +26,7 @@ def get_app() -> FastAPI:
     """
     configure_logging()
     app = FastAPI(
-        title="property_manager_api",
+        title="Property Manager API",
         version=metadata.version("property_manager_api"),
         docs_url=None,
         redoc_url=None,
