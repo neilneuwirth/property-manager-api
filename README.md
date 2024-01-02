@@ -1,6 +1,4 @@
-# property_manager_api
-
-This project was generated using fastapi_template.
+# Property Manager API
 
 ## Poetry
 
